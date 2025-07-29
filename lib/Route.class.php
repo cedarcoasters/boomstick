@@ -5,9 +5,26 @@ namespace BoomStick\Lib;
 use BoomStick\Lib\Globals as G;
 use BoomStick\Lib\Debug as D;
 
+class RouteName
+{
+	protected $route;
+	protected $alias;
+
+	public function __construct(Route $route, $alias)
+	{
+		$this->route = $route;
+		$this->alias = $alias;
+	}
+	public function name($name)
+	{
+		$this->route->setNameToAlias($name, $this->alias);
+	}
+}
+
 class Route
 {
-	protected static $aliasList        = [];
+	protected static $aliasList       = [];
+	protected static $nameToAliasList = [];
 
 	protected $module;
 	protected $pathOriginal      = null;
@@ -37,14 +54,53 @@ class Route
 		if(isset(self::$aliasList[$alias])) {
 			throw new \Exception( implode(' ', array(
 				 __CLASS__.'::'.__FUNCTION__
-				,' - The alias ['.$alias.'] has already been registered to ['.implode('/', $this->aliasList[$alias]).']'
+				,' - The alias ['.$alias.'] has already been registered to ['.implode('/', self::$aliasList[$alias]).']'
 			)));
 		}
 		self::$aliasList[$alias] = [
 			 'module' => $this->module
-			,'route' => $route];
-		// G::$route[$this->module][$alias] = $route;
+			,'route' => $route
+		];
+		return new RouteName($this, $alias);
 	}
+
+	public function byName($name, $parameters=[])
+	{
+		if(!isset(self::$nameToAliasList[$name])) {
+			throw new \Exception( implode(' ', array(
+				 __CLASS__.'::'.__FUNCTION__
+				,' - The route name ['.$name.'] does not exist.'
+			)));
+		}
+ 		$parts = explode('/', self::$nameToAliasList[$name]);
+ 		$parKey = 0;
+ 		foreach($parts as $key => $part) {
+ 			if(in_array($part, ['%s', '%i'])) {
+ 				$parts[$key] = (isset($parameters[$parKey])) ? $parameters[$parKey++] : '';
+ 			}
+ 		}
+ 		return  implode('/', $parts);
+	}
+
+	public function setNameToAlias($name, $alias)
+	{
+		if(isset(self::$nameToAliasList[$name])) {
+			throw new \Exception( implode(' ', array(
+				 __CLASS__.'::'.__FUNCTION__
+				,' - The name ['.$name.'] has already been registered to ['.implode('/', self::$aliasList[self::$nameToAliasList[$name]]).']'
+			)));
+		}
+		elseif(empty($name) || empty($alias)) {
+			throw new \Exception( implode(' ', array(
+				 __CLASS__.'::'.__FUNCTION__
+				,' - The name ['.$name.'] or alias ['.$alias.'] is/are empty.'
+			)));
+		}
+
+		self::$nameToAliasList[$name] = $alias;
+	}
+
+
 
 	public function translate($path)
 	{
@@ -88,9 +144,6 @@ class Route
 		$pathParts = explode('/', $path);
 		$matches   = [];
 
-		// D::printr($regexAliases);
-		// D::printr($pathParts);
-
 		foreach($regexAliases as $alias => $conf) {
 
 			$match = true;
@@ -102,8 +155,6 @@ class Route
 					break;
 				}
 
-				// $line=$pattern.' | '.$pathParts[$i];
-
 				if(!preg_match($pattern, $pathParts[$i])) {
 					$match = false;
 				}
@@ -111,20 +162,13 @@ class Route
 				$i++;
 
 				if($match === false) {
-					// $d[] = $line.' [NO MATCH]';
 					break;
 				}
-				// $d[] =  $line.'[______MATCH FOUND______]';
 			}
 			if($match === true) {
 				$matches[] = $alias;
 			}
 		}
-
-		// $s=new Session();if($orgPath!='/favicon.ico'){D::consoleIsolated($s->D, $d);}
-		// $s=new Session();if($orgPath!='/favicon.ico'){D::consoleIsolated($s->D, $matches);}
-
-		// D::printre($matches);
 
 		if(count($matches) <= 0) {
 			return $path;
@@ -154,10 +198,8 @@ class Route
 			$parameterValues[$type][] = $pathPart;
 		}
 
-		// D::printr($aliasMatch);
 		$realPath     = self::$aliasList[$aliasMatch]['route'];
 		$this->module = self::$aliasList[$aliasMatch]['module'];
-		// D::printr($realPath);
 
 		$v = (isset($parameterValues['integer'])) ? count($parameterValues['integer']) : 0;
 		for($i=1; $i<=$v; $i++) {
@@ -168,14 +210,11 @@ class Route
 			$realPath = preg_replace('/\$s'.$i.'/', $parameterValues['string'][$i-1], $realPath);
 		}
 
-		// D::printre($realPath);
 		$canonicalPath = (array_key_exists($realPath, $this->pathCanonicalList)) ? $this->pathCanonicalList[$realPath] : null;
 
 		if(count($pathParts) > 0) {
 			$realPath .= '/'.implode('/', $pathParts);
 		}
-
-		// D::printre([$realPath, $canonicalPath]);
 
 		return [$realPath, $canonicalPath];
 	}
@@ -190,7 +229,8 @@ class Route
 		}
 
 		$parts            = explode('/', preg_replace('/^\/*/', '', $this->path));
-		$this->controller = (isset($parts[0])) ? array_shift($parts) : null;
+		$controller = (isset($parts[0])) ? array_shift($parts) : null;
+		$this->controller = implode('', array_map('ucfirst', explode('-', $controller)));
 		$this->action     = (isset($parts[0])) ? array_shift($parts) : null;
 
 		$partsCount = count($parts);
@@ -232,9 +272,9 @@ class Route
 	{
 		$namespace = [];
 		$parts     = explode('/', $this->module);
-		$nsParts   = explode('_', str_replace('mod-', '', array_pop($parts)));
+		$nsParts   = explode('_', array_pop($parts));
 		foreach($nsParts as $part) {
-			$namespace[] = ucfirst($part);
+			$namespace[] = implode('', array_map('ucfirst', explode('-', $part)));
 		}
 		return 'BoomStick\Module\\'.implode('', $namespace);
 	}

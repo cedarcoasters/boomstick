@@ -1,0 +1,129 @@
+#!/usr/bin/env php
+<?php
+/**    ____                       _____ __  _      __
+ *    / __ )____  ____  ____ ___ / ___// /_(_)____/ /__
+ *   / __  / __ \/ __ \/ __ `__ \\__ \/ __/ / ___/ //_/
+ *  / /_/ / /_/ / /_/ / / / / / /__/ / /_/ / /__/ ,<
+ * /_____/\____/\____/_/ /_/ /_/____/\__/_/\___/_/|_|
+ *
+ * BoomStick.com - A framework for highly explosive performance
+ * Copyright 2012 - 2025, BlazePHP.com
+ *
+ * Licensed under The MIT License
+ * Any redistribution of this file's contents, both
+ * as a whole, or in part, must retain the above information
+ *
+ * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
+ * @copyright     Copyright 2012 - 2025, BlazePHP.com/BoomStick
+ * @link          http://blazePHP.com/boomstick
+ */
+// namespace BoomStick;
+require_once(dirname(__DIR__).'/init/cli.init.php');
+
+use BoomStick\Lib\Struct;
+use BoomStick\Lib\Globals as G;
+use BoomStick\Lib\Debug as D;
+use BoomStick\Lib\CLI\CLI;
+use BoomStick\Lib\CLI\Flag;
+use BoomStick\Lib\CLI\Option;
+use BoomStick\Lib\CLI\Message;
+
+
+
+G::$cli = new CLI($argc, $argv);
+
+// D::printre(G::$cli);
+
+
+// CLI Flag - Dry Run - Do not create any files, only output file list
+$f              = new Flag();
+$f->long        = 'dry-run';
+$f->short       = 'D';
+$f->description = 'Dry Run - Do not create any files, only output file list';
+G::$cli->addFlag($f);
+
+// CLI Option - Module Name - The name of the module
+$o              = new Option();
+$o->long        = 'module-name';
+$o->short       = 'm';
+$o->required    = true;
+$o->default     = null;
+$o->description = 'Module Name - The name of the module';
+G::$cli->addOption($o);
+
+// CLI Option - Module type to create.
+$o              = new Option();
+$o->long        = 'module-type';
+$o->short       = 't';
+$o->required    = false;
+$o->default     = 'entry';
+$o->description = 'Module type to create.  Options: [entry, ui, api, lib, composer]'; // more to come
+G::$cli->addOption($o);
+
+G::$cli->init();
+// echo G::$cli->getOptionsClass();
+class O extends Struct
+{
+	public static $moduleName;
+	public static $moduleNamespace;
+	public static $moduleType;
+}
+O::$moduleName = G::$cli->moduleName;
+O::$moduleType = G::$cli->moduleType;
+O::$moduleNamespace = ucfirst(O::$moduleType).implode('', array_map('ucfirst', explode('-', O::$moduleName)));
+
+$moduleTemplateDir = BSTEMPLATE.'/module-'.O::$moduleType;
+if(!file_exists($moduleTemplateDir)) {
+	$message = 'ERROR: The module type ['.O::$moduleType.'] does not exist.';
+	G::$cli->error($message);
+}
+
+if(!preg_match('/^[a-zA-Z0-9_\-]+$/', O::$moduleName)) {
+	$message = 'ERROR: The module name ['.O::$moduleName.'] is invalid.  Only the following characters are allowed: a-zA-Z0-9_-';
+	G::$cli->error($message);
+}
+
+G::$cli->NL(1);
+
+function copyDir($originDir, $destinationDir)
+{
+	$dh = opendir($originDir);
+	while($file = readdir($dh)) {
+		if(in_array($file, ['.', '..'])) {
+			continue;
+		}
+		$sourceFile      = $originDir.'/'.$file;
+		$destinationFile = $destinationDir.'/'.preg_replace('/(__namespace__)/', O::$moduleNamespace, $file);
+		if(is_dir($sourceFile)) {
+			Message::send('MSG: Creating module directory ['.$destinationFile.']: ', Message::LEVEL_1, Message::NO_NEW_LINE, 'white');
+			mkdir($destinationFile);
+			Message::send('SUCCESS', Message::LEVEL_1, Message::ADD_NEW_LINE, 'green');
+
+			copyDir($sourceFile, $destinationFile);
+			continue;
+		}
+
+		Message::send('MSG: Parsing file: ['.$sourceFile.']: ', Message::LEVEL_1, Message::NO_NEW_LINE, 'blue');
+		ob_start();
+		include($sourceFile);
+		$fileContents = ob_get_clean();
+		$fh = fopen($destinationFile, 'w');
+		fwrite($fh, $fileContents);
+		fclose($fh);
+		Message::send('SUCCESS', Message::LEVEL_1, Message::ADD_NEW_LINE, 'green');
+	}
+}
+
+try {
+	$moduleDir = BSMODULE.'/'.O::$moduleType.'-'.O::$moduleName;
+	Message::send('MSG: Creating module directory ['.$moduleDir.']: ', Message::LEVEL_1, Message::NO_NEW_LINE);
+	mkdir($moduleDir);
+	Message::send('SUCCESS', Message::LEVEL_1, Message::ADD_NEW_LINE, 'green');
+
+	copyDir($moduleTemplateDir, $moduleDir);
+
+}
+catch(\Exception $e) {
+	Message::error('ERROR: '.$e->getMessage());
+}
+G::$cli->NL();

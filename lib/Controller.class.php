@@ -1,6 +1,7 @@
 <?php
 
 namespace BoomStick\Lib;
+use BoomStick\Lib\Globals as G;
 use BoomStick\Lib\ControllerAPI;
 use BoomStick\Lib\Debug as D;
 
@@ -174,13 +175,10 @@ abstract class Controller extends ControllerAPI
 		return $this->processFile('view', $file, false);
 	}
 
-	// public function renderViewReturn($file) {
-	// 	return $this->processFile('view', $file, true);
-	// }
-
-	// public function renderWidgetReturn($file) {
-	// 	return $this->processFile('widget', $file, true);
-	// }
+	public function insertRoute($name, $parameters)
+	{
+		return G::$route->byName($name, $parameters);
+	}
 
 	public function insertElement($file)
 	{
@@ -229,11 +227,6 @@ abstract class Controller extends ControllerAPI
 				$fileDir   = 'style';
 				$extention = 'style';
 				break;
-
-			// case 'widget':
-			// 	$fileDir   = 'widget';
-			// 	$extention = 'widget';
-			// 	break;
 		}
 		$fileLoc = $this->modulePath.'/render/'.$fileDir.'/'.$file.'.'.$extention.'.php';
 
