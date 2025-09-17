@@ -40,8 +40,15 @@ class Route
 	public function init()
 	{
 		$this->pathOriginal = G::$request->getRequestedPath();
-		list($this->path, $this->pathCanonical) = $this->translate($this->pathOriginal);
-		$this->parse();
+		try {
+			list($this->path, $this->pathCanonical) = $this->translate($this->pathOriginal);
+			$this->parse();
+			// D::printr('made it');
+		}
+		catch(\Exception $e) {
+			// D::printre('made it');
+			header('Location: /not-found');
+		}
 	}
 
 	public static function aliasList()
@@ -114,18 +121,20 @@ class Route
 			,'[a-zA-Z0-9\-\.\%\@_\=\s]+'
 		);
 		$regexAliases = [];
+
 		foreach(self::$aliasList as $alias => $config) {
 			$module = $config['module'];
 			$route  = $config['route'];
 
+			// Check for /
+			if($alias === '/') { //count($parts) == 1 && empty($parts[0])) {
+				$regexAliases[$alias] = array('regex' => array('/^$/'), 'route' => $route);
+				continue;
+			}
+
 			$parts      = explode('/', $alias);
 			$regexParts = [];
 
-			// Check for /
-			if(count($parts) == 1 && empty($parts[0])) {
-				$regexAliases[$alias] = array('regex' => array('/^\/$/'), 'route' => $route);
-				continue;
-			}
 
 			foreach($parts as $part) {
 				if(empty($part)) {
@@ -143,6 +152,8 @@ class Route
 		$path      = preg_replace('/^\//', '', $path);
 		$pathParts = explode('/', $path);
 		$matches   = [];
+
+		// D::printre($regexAliases);
 
 		foreach($regexAliases as $alias => $conf) {
 
@@ -171,7 +182,10 @@ class Route
 		}
 
 		if(count($matches) <= 0) {
-			return $path;
+			throw new \Exception( implode(' ', array(
+				 __CLASS__.'::'.__FUNCTION__
+				,' - The requested route does not exist.'
+			)));
 		}
 		ksort($matches);
 		$aliasMatch = array_pop($matches);

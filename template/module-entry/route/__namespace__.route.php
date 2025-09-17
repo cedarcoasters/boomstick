@@ -14,6 +14,7 @@ class <?=O::$moduleNamespace;?> extends Route
 
 $route = new <?=O::$moduleNamespace;?>();
 
+$route->register('<?=O::$moduleNamespace;?>/notFound' ,'/not-found');
 
 $route->register('<?=O::$moduleNamespace;?>/index' ,'/');
 

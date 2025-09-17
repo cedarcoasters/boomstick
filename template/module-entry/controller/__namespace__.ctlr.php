@@ -16,4 +16,11 @@ class <?=O::$moduleNamespace;?> extends Controller
 		$this->bodyView = 'index';
 		$this->render();
 	}
+
+	public function notFound()
+	{
+		$this->bodyView = 'not-found';
+		header("HTTP/1.1 404 Not Found");
+		$this->render();
+	}
 }
