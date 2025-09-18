@@ -1,14 +1,18 @@
 <?='<?php'?>
 
 namespace BoomStick\Module\<?=O::$moduleNamespace;?>\Controller;
-use BoomStick\Lib\Controller;
+use BoomStick\Lib\ControllerAPI;
 use BoomStick\Lib\Debug as D;
 
-class <?=O::$moduleNamespace;?> extends Controller
+use BoomStick\Module\<?=O::$moduleNamespace;?>\Lib\Say;
+
+class <?=O::$moduleNamespace;?> extends ControllerAPI
 {
-	public function index()
+	public function hello()
 	{
-		$this->bodyView = 'index';
-		$this->render();
+		$response = $this->buildResponse();
+		$response->data = Say::hello();
+
+		$this->renderJSON($response);
 	}
 }

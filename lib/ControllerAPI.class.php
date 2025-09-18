@@ -4,9 +4,39 @@
 namespace BoomStick\Lib;
 use \BoomStick\Lib\Globals as G;
 
+/**
+ * ControllerValues - Static values that are used to hold the values set within a controller.
+ *                    This avoids variable name collision.
+ */
+class ControllerValues extends Struct
+{
+	public $variables = array();
+	public $layout    = [
+		 'modulePath' => null
+		,'layout' => 'default'
+	];
+	public $key       = null;
+	public $value     = null;
+}
+
 
 abstract class ControllerAPI extends Struct
 {
+	private $cValues;
+	private $modulePath;
+
+	public function __construct()
+	{
+		if(gettype($this->cValues) != 'object') {
+			$this->cValues = new ControllerValues();
+		}
+	}
+
+	public function setModulePath($modulePath)
+	{
+		$this->modulePath = $modulePath;
+	}
+
 	public function before()
 	{
 		return null;

@@ -7,21 +7,6 @@ use BoomStick\Lib\Debug as D;
 
 
 /**
- * ControllerValues - Static values that are used to hold the values set within a controller.
- *                    This avoids variable name collision.
- */
-class ControllerValues extends Struct
-{
-	public $variables = array();
-	public $layout    = [
-		 'modulePath' => null
-		,'layout' => 'default'
-	];
-	public $key       = null;
-	public $value     = null;
-}
-
-/**
  * Controller
  *
  * @author    Matt Roszyk <me@mattroszyk.com>
@@ -30,21 +15,6 @@ class ControllerValues extends Struct
  */
 abstract class Controller extends ControllerAPI
 {
-	private $cValues;
-	private $modulePath;
-
-	public function __construct()
-	{
-		if(gettype($this->cValues) != 'object') {
-			$this->cValues = new ControllerValues();
-		}
-	}
-
-	public function setModulePath($modulePath)
-	{
-		$this->modulePath = $modulePath;
-	}
-
 	/**
 	 * This used to set the values that will be parsed into the view files.  When
 	 * you set controller attribute other than the three reserved (viewPath,

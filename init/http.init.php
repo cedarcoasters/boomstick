@@ -94,10 +94,6 @@ G::$request = new Request();
 require_once(BSMODULE.'/route.map.php');
 G::$route = new Route();
 
-
-
-// D::printr(G::$route::aliasList());
-
 G::$route->init();
 require(G::$route->controllerLocation());
 

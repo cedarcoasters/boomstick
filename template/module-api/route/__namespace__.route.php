@@ -15,6 +15,6 @@ class <?=O::$moduleNamespace;?> extends Route
 $route = new <?=O::$moduleNamespace;?>();
 
 
-$route->register('<?=O::$moduleNamespace;?>/index' ,'/');
+$route->register('<?=O::$moduleNamespace;?>/hello' ,'/api-hello');
 
 
