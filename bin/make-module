@@ -46,7 +46,7 @@ G::$cli->addFlag($f);
 $o              = new Option();
 $o->long        = 'module-name';
 $o->short       = 'm';
-$o->required    = true;
+$o->required    = false;
 $o->default     = null;
 $o->description = 'Module Name - The name of the module';
 G::$cli->addOption($o);
@@ -76,11 +76,18 @@ $moduleTemplateDir = BSTEMPLATE.'/module-'.O::$moduleType;
 if(!file_exists($moduleTemplateDir)) {
 	$message = 'ERROR: The module type ['.O::$moduleType.'] does not exist.';
 	G::$cli->error($message);
+	exit;
 }
 
-if(!preg_match('/^[a-zA-Z0-9_\-]+$/', O::$moduleName)) {
+if(O::$moduleType === 'composer' && !empty(O::$moduleName)) {
+	$message = 'ERROR: The composer module cannot be named.  Please omit the name option.';
+	G::$cli->error($message);
+	exit;
+}
+elseif(!preg_match('/^[a-zA-Z0-9_\-]+$/', O::$moduleName)) {
 	$message = 'ERROR: The module name ['.O::$moduleName.'] is invalid.  Only the following characters are allowed: a-zA-Z0-9_-';
 	G::$cli->error($message);
+	exit;
 }
 
 G::$cli->NL(1);
@@ -115,7 +122,9 @@ function copyDir($originDir, $destinationDir)
 }
 
 try {
-	$moduleDir = BSMODULE.'/'.O::$moduleType.'-'.O::$moduleName;
+	$moduleDir = (!empty(O::$moduleName))
+		? BSMODULE.'/'.O::$moduleType.'-'.O::$moduleName
+		: BSMODULE.'/'.O::$moduleType;
 	Message::send('MSG: Creating module directory ['.$moduleDir.']: ', Message::LEVEL_1, Message::NO_NEW_LINE);
 	mkdir($moduleDir);
 	Message::send('SUCCESS', Message::LEVEL_1, Message::ADD_NEW_LINE, 'green');

@@ -45,7 +45,7 @@ while($module = readdir($dhm)) {
 			$dhr = opendir($routeDir);
 			while($routeFile = readdir($dhr)) {
 				if(preg_match('/\.route\.php$/', $routeFile)) {
-					$routeFilePath = $module.'/route/'.$routeFile;
+					$routeFilePath = '/'.$module.'/route/'.$routeFile;
 					$routeMap[] = $routeFilePath;
 					Message::send('MSG:     Found ['.$routeFilePath.']', Message::LEVEL_1, Message::ADD_NEW_LINE, 'blue');
 				}
