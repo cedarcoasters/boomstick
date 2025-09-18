@@ -127,3 +127,7 @@ catch(\Exception $e) {
 	Message::error('ERROR: '.$e->getMessage());
 }
 G::$cli->NL();
+
+$makeRouteMap = __DIR__.'/make-route-map -v';
+echo `/usr/bin/env php $makeRouteMap`;
+
