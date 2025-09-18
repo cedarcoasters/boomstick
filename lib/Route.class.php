@@ -282,6 +282,11 @@ class Route
 		return $this->module;
 	}
 
+	public function moduleBasename()
+	{
+		return basename($this->module);
+	}
+
 	public function moduleNamespace()
 	{
 		$namespace = [];

@@ -13,7 +13,10 @@ use BoomStick\Lib\Debug as D;
 class ControllerValues extends Struct
 {
 	public $variables = array();
-	public $layout    = 'default';
+	public $layout    = [
+		 'modulePath' => null
+		,'layout' => 'default'
+	];
 	public $key       = null;
 	public $value     = null;
 }
@@ -81,9 +84,14 @@ abstract class Controller extends ControllerAPI
 	 * @param $layout
 	 * @return - void
 	 */
-	public function setLayout($layout)
+	public function setLayout($layout='default', $moduleOveride=null): void
 	{
-		if(!file_exists($this->modulePath.'/render/layout/'.$layout.'.layout.php')) {
+		$modulePath = $this->modulePath;
+		if(!is_null($moduleOveride) && preg_match('/^[a-z0-9\-_]+$/', $moduleOveride)) {
+			$modulePath = str_replace(G::$route->moduleBasename(), $moduleOveride, $modulePath);
+		}
+
+		if(!file_exists($modulePath.'/render/layout/'.$layout.'.layout.php')) {
 			throw new \Exception( implode(' ', array(
 				 __CLASS__.'::'.__FUNCTION__
 				,' - The layout file ['.$layout.'] specified does not exist.'
@@ -93,7 +101,10 @@ abstract class Controller extends ControllerAPI
 			$this->cValues = new ControllerValues();
 		}
 
-		$this->cValues->layout = $layout;
+		$this->cValues->layout = [
+			 'modulePath' => $modulePath
+			,'layout'     => $layout
+		];
 	}
 
 
@@ -202,6 +213,8 @@ abstract class Controller extends ControllerAPI
 
 	private function processFile($type, $file, $returnContent)
 	{
+		$modulePath = $this->modulePath;
+
 		switch($type) {
 			case 'view':
 				$fileDir   = 'view';
@@ -209,8 +222,12 @@ abstract class Controller extends ControllerAPI
 				break;
 
 			case 'layout':
-				$fileDir   = 'layout';
-				$extention = 'layout';
+				$modulePath = (!empty($file['modulePath']) && file_exists($file['modulePath']))
+					? $file['modulePath']
+					: $modulePath;
+				$file       = $file['layout'];
+				$fileDir    = 'layout';
+				$extention  = 'layout';
 				break;
 
 			case 'element':
@@ -228,7 +245,7 @@ abstract class Controller extends ControllerAPI
 				$extention = 'style';
 				break;
 		}
-		$fileLoc = $this->modulePath.'/render/'.$fileDir.'/'.$file.'.'.$extention.'.php';
+		$fileLoc = $modulePath.'/render/'.$fileDir.'/'.$file.'.'.$extention.'.php';
 
 		if(!file_exists($fileLoc)) {
 			throw new \Exception( implode(' ', array(
