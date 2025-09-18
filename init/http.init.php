@@ -85,6 +85,11 @@ spl_autoload_register(function($className) {
 	}
 });
 
+$composer = BSMODULE.'/composer/vendor/autoload.php';
+if(file_exists($composer)) {
+	require_once($composer);
+}
+
 G::$request = new Request();
 require_once(BSMODULE.'/route.map.php');
 G::$route = new Route();
