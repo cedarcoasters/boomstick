@@ -60,6 +60,15 @@ $o->default     = 'entry';
 $o->description = 'Module type to create.  Options: [entry, ui, api, lib, composer]'; // more to come
 G::$cli->addOption($o);
 
+// CLI Option - Entry Point module name
+$o              = new Option();
+$o->long        = 'entry-point-module';
+$o->short       = 'E';
+$o->required    = false;
+$o->default     = null;
+$o->description = 'Entry Point module name (required for nodejs/composer modules)';
+G::$cli->addOption($o);
+
 G::$cli->init();
 // echo G::$cli->getOptionsClass();
 class O extends Struct
@@ -67,10 +76,13 @@ class O extends Struct
 	public static $moduleName;
 	public static $moduleNamespace;
 	public static $moduleType;
+	public static $entryPointModule;
 }
 O::$moduleName = G::$cli->moduleName;
 O::$moduleType = G::$cli->moduleType;
 O::$moduleNamespace = ucfirst(O::$moduleType).implode('', array_map('ucfirst', explode('-', O::$moduleName)));
+O::$entryPointModule = G::$cli->entryPointModule;
+
 
 $moduleTemplateDir = BSTEMPLATE.'/module-'.O::$moduleType;
 if(!file_exists($moduleTemplateDir)) {
@@ -79,16 +91,31 @@ if(!file_exists($moduleTemplateDir)) {
 	exit;
 }
 
-if(O::$moduleType === 'composer' && !empty(O::$moduleName)) {
-	$message = 'ERROR: The composer module cannot be named.  Please omit the name option.';
+// if(in_array(O::$moduleType, ['nodejs', 'composer']) && !empty(O::$moduleName)) {
+// 	$message = 'ERROR: The nodejs/composer modules cannot be named.  Please omit the name option.';
+// 	G::$cli->error($message);
+// 	exit;
+// }
+// else
+
+if(in_array(O::$moduleType, ['nodejs', 'composer']) && empty(O::$entryPointModule)) {
+	$message = 'ERROR: The nodejs module requires an entry module to be installed and declared.  Please ensure that you have installed one and named it correctly --entry-point-module=[name-of-module].';
 	G::$cli->error($message);
 	exit;
 }
-elseif(!preg_match('/^[a-zA-Z0-9_\-]+$/', O::$moduleName)) {
+elseif(in_array(O::$moduleType, ['nodejs', 'composer']) && !empty(O::$entryPointModule) && !file_exists(BSMODULE.'/entry-'.O::$entryPointModule)) {
+	$message = 'ERROR: The entry point module ['.BSMODULE.'/'.O::$entryPointModule.'] is invalid.  Please verify that you have installed this module first.';
+	G::$cli->error($message);
+	exit;
+}
+elseif(!in_array(O::$moduleType, ['nodejs', 'composer']) && !preg_match('/^[a-zA-Z0-9_\-]+$/', O::$moduleName)) {
 	$message = 'ERROR: The module name ['.O::$moduleName.'] is invalid.  Only the following characters are allowed: a-zA-Z0-9_-';
 	G::$cli->error($message);
 	exit;
 }
+
+
+
 
 G::$cli->NL(1);
 
