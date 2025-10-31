@@ -1,0 +1,233 @@
+#!/usr/bin/env php
+<?php
+/**    ____                       _____ __  _      __
+ *    / __ )____  ____  ____ ___ / ___// /_(_)____/ /__
+ *   / __  / __ \/ __ \/ __ `__ \\__ \/ __/ / ___/ //_/
+ *  / /_/ / /_/ / /_/ / / / / / /__/ / /_/ / /__/ ,<
+ * /_____/\____/\____/_/ /_/ /_/____/\__/_/\___/_/|_|
+ *
+ * BoomStick.com - A framework for high explosive performance
+ * Copyright 2012 - <?=date('Y');?>, BlazePHP.com
+ *
+ * Licensed under The MIT License
+ * Any redistribution of this file's contents, both
+ * as a whole, or in part, must retain the above information
+ *
+ * @license       MIT License (http://www.opensource.org/licenses/mit-license.php)
+ * @copyright     Copyright 2012 - <?=date('Y');?>, BlazePHP.com
+ * @link          http://blazePHP.com
+ */
+namespace BoomStick;
+use \BoomStick\Lib\Globals as G;
+use \BoomStick\Lib\Debug   as D;
+use \BoomStick\Lib\Struct;
+
+use BoomStick\Lib\CLI\CLI;
+use BoomStick\Lib\CLI\Flag;
+use BoomStick\Lib\CLI\Option;
+use BoomStick\Lib\CLI\Message as M;
+
+require(dirname(dirname(__DIR__)).'/init/cli.init.php');
+
+// Create the CLI object and pass in the arguments
+G::$cli = new CLI($argc, $argv);
+
+
+// CLI Option - Test file directory location
+$o              = new Option();
+$o->long        = 'test-dir';
+$o->short       = 'T';
+$o->required    = false;
+$o->default     = BSROOT.'/test/case';
+$o->description = 'Test file directory location';
+G::$cli->addOption($o);
+
+
+// CLI Flag - Die on error
+$f              = new Flag();
+$f->long        = 'die-on-error';
+$f->short       = 'D';
+$f->description = 'Die on error';
+G::$cli->addFlag($f);
+
+// CLI Option - Filter the test cases by keywords, CSV.
+$o              = new Option();
+$o->long        = 'filter-csv';
+$o->short       = 'F';
+$o->required    = false;
+$o->default     = null;
+$o->description = 'Filter the test cases by keywords, CSV.';
+G::$cli->addOption($o);
+
+// CLI Option - Filter the test cases to be omitted, CSV
+$o              = new Option();
+$o->long        = 'omit-csv';
+$o->short       = 'O';
+$o->required    = false;
+$o->default     = null;
+$o->description = 'Filter the test cases to be omitted, CSV';
+G::$cli->addOption($o);
+
+
+// Initilize the CLI
+G::$cli->init();
+
+
+
+class O extends Struct
+{
+	// Options/Flags
+	public static $testDir;
+	public static $dieOnError;
+	public static $filterCSV;
+	public static $omitCSV;
+
+	// Script globals
+	public static $testCases;
+	public static $case;
+}
+O::$testDir    = G::$cli->testDir;
+O::$dieOnError = G::$cli->dieOnError;
+O::$filterCSV  = G::$cli->filterCsv;
+O::$omitCSV    = G::$cli->omitCsv;
+
+O::$testCases  = array();
+
+
+
+//
+// Validate the test directory
+//
+if(!file_exists(O::$testDir)) {
+	$message = 'Error: The direcotry ['.O::$testDir.'] does not exist.';
+	M::error('ERROR: '.$message, M::ADD_NEW_LINE, 'red');
+	exit;
+}
+else if(!is_dir(O::$testDir)) {
+	$message = 'Error: ['.O::$testDir.'] is not a valid directory';
+	M::error('ERROR: '.$message, M::ADD_NEW_LINE, 'red');
+	exit;
+}
+
+try {
+	// Filter files that end with *.test.php firstly
+	$filters     = array('/\.test\.php$/');
+	$omitFilters = array();
+
+	// Consider the filter CSV if it is provided
+	if(O::$filterCSV !== null) {
+		$filterCSVRaw = explode(',', O::$filterCSV);
+		foreach($filterCSVRaw as $filter) {
+			$filters[] = '/'.$filter.'/';
+		}
+	}
+	// D::printre($filters);
+
+	// Consider the omitted filter CSV if it is provided
+	if(O::$omitCSV !== null) {
+		$omitCSVRaw = explode(',', O::$omitCSV);
+		foreach($omitCSVRaw as $omitFilter) {
+			$omitFilters[] = '/'.$omitFilter.'/';
+		}
+	}
+
+	$dh = opendir(O::$testDir);
+	while(false !== ($file = readdir($dh))) {
+		$addFile = true;
+		foreach($filters as $filter) {
+			if(!preg_match($filter, $file)) {
+				$addFile = false;
+			}
+		}
+		foreach($omitFilters as $filter) {
+			if(preg_match($filter, $file)) {
+				$addFile = false;
+			}
+		}
+		if($addFile === true) {
+			O::$testCases[] = O::$testDir.'/'.$file;
+		}
+	}
+}
+catch(\Exception $e) {
+	$message = 'Error: Reading the directory ['.O::$testDir.'] has failed. '."\n".$e->getMessage();
+	M::error('ERROR: '.$message, M::ADD_NEW_LINE, 'red');
+	exit;
+}
+
+$testCaseCount = count(O::$testCases);
+if($testCaseCount <= 0) {
+	$message = 'There are no test cases found in the location specified ['.O::$testDir.'].';
+	if(!empty(O::$filterCSV)) {
+		$message .= ' Check the filters applied ['.O::$filterCSV.']';
+	}
+	M::error('ERROR: '.$message, M::ADD_NEW_LINE, 'red');
+	exit;
+}
+
+
+//
+// Start the test sequence with the found files
+//
+M::sendLineBreak(M::LEVEL_1);
+$message = 'Starting test sequence with ['.count(O::$testCases).'] test cases';
+M::send($message, M::LEVEL_1, M::ADD_NEW_LINE);
+M::sendLineBreak(M::LEVEL_1);
+
+
+foreach(O::$testCases as $caseFile) {
+	try {
+		require_once($caseFile);
+		$fileBaseName  = basename($caseFile);
+		$classParts    = explode('.', preg_replace('/\.php$/', '', $fileBaseName));
+		array_pop($classParts);
+		$classBaseName = implode('', $classParts).'Test';
+		$class         = '\\BoomStickTest\\'.$classBaseName;
+		O::$case       = new $class;
+		$classWords    = preg_split('/(?=[A-Z])/',$classBaseName);
+		$classLabel    = implode(' ', $classWords);
+
+		$message = '    [Begin: '.G::$cli->colorize($classLabel, 'blue').']';
+		M::send($message, M::LEVEL_1, M::ADD_NEW_LINE);
+
+		$ref = new \ReflectionClass(O::$case);
+		$methods = $ref->getMethods();
+		$testNo = 1;
+
+		foreach($methods as $method) {
+			if(preg_match('/^test/', $method->name)) {
+				$methodWords = preg_split('/(?=[A-Z])/',$method->name);
+				array_shift($methodWords);
+				$methodLabel = implode(' ', $methodWords);
+
+
+				$message = '        '.str_pad((string)$testNo++, 4, ' ', STR_PAD_LEFT).': '.$methodLabel.' -> ';
+				M::$padLength = 60;
+				M::send(M::pad($message), M::LEVEL_1, M::NO_NEW_LINE);
+
+				try {
+					O::$case->executeTest($method->name);
+					M::send(' SUCCESS', M::LEVEL_1, M::ADD_NEW_LINE, 'green');
+				}
+				catch(\Exception $e) {
+
+					$message = 'FAIL, Reason: '.$e->getMessage();
+					M::send($message, M::LEVEL_1, M::ADD_NEW_LINE);
+					M::sendLineBreak(M::LEVEL_1);
+
+					if(O::$dieOnError === true) {
+						exit;
+					}
+				}
+			}
+		}
+
+		$message = '    [End:   '.G::$cli->colorize($classLabel, 'yellow').']';
+		M::send($message, M::LEVEL_1, M::ADD_NEW_LINE);
+	}
+	catch(\Exception $e) {
+		D::printre($e->getMessage());
+		// echo "\n".'Error: The test case class ['.$class.'] was not loaded from file ['.$caseFile.'] due to the following reason(s):'."\n".$e->getMessage()."\n\n";
+		exit;
+	}
+}
