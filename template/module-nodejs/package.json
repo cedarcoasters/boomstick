@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "copy-jquery": "terser node_modules/jquery/dist/jquery.js -o ../entry-<?=O::$entryPointModule;?>/public/js/vendor/jquery.min.js",
+    "copy-bootstrap": "cpx 'node_modules/bootstrap/dist/css/bootstrap.min.css' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/ && cpx 'node_modules/bootstrap/dist/js/bootstrap.min.js' ../entry-<?=O::$entryPointModule;?>/public/js/vendor/",
+    "install-fonts": "wget 'https://fonts.googleapis.com/icon?family=Material+Icons' -O ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.css && wget 'https://fonts.gstatic.com/s/materialicons/v145/flUhRq6tzZclQEJ-Vdg-IuiaDsNZ.ttf' -O ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.ttf && sed -i -E 's/http.*\\.ttf/\\/css\\/vendor\\/google=material-icons.ttf/g' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.css"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.8",
+    "jquery": "^3.7.1"
+  },
+  "devDependencies": {
+    "cpx": "^1.5.0",
+    "terser": "^5.44.0"
+  }
+}

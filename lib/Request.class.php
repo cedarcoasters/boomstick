@@ -1,6 +1,7 @@
 <?php
 
 namespace BoomStick\Lib;
+use BoomStick\Lib\Debug AS D;
 
 class Request
 {

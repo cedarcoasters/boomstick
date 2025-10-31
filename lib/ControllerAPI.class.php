@@ -22,8 +22,8 @@ class ControllerValues extends Struct
 
 abstract class ControllerAPI extends Struct
 {
-	private $cValues;
-	private $modulePath;
+	protected $cValues;
+	protected $modulePath;
 
 	public function __construct()
 	{
