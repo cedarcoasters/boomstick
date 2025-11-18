@@ -55,23 +55,10 @@ spl_autoload_register(function($className) {
 
 	$translate = [BSROOT];
 	foreach($parts as $part) {
-		$translate[] = strtolower($part);
-	}
-
-	if(isset($translate[1]) && $translate[1] === 'module') {
-		$search = [
-			 '/^entry/'
-			,'/^api/'
-			,'/^lib/'
-			,'/^ui/'
-		];
-		$replace = [
-			 'entry-'
-			,'api-'
-			,'lib-'
-			,'ui-'
-		];
-		$translate[2] = preg_replace($search, $replace, $translate[2]);
+		$split = preg_match('/[A-Z]/', $part)
+			? array_values(array_filter(preg_split('/(?=[A-Z])/', $part)))
+			: [$part];
+		$translate[] = strtolower(implode('-', $split));
 	}
 
 	$classFile = implode('/', $translate).'/'.$class;

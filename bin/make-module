@@ -108,11 +108,12 @@ elseif(in_array(O::$moduleType, ['nodejs', 'composer']) && !empty(O::$entryPoint
 	G::$cli->error($message);
 	exit;
 }
-elseif(!in_array(O::$moduleType, ['nodejs', 'composer']) && !preg_match('/^[a-zA-Z0-9_\-]+$/', O::$moduleName)) {
-	$message = 'ERROR: The module name ['.O::$moduleName.'] is invalid.  Only the following characters are allowed: a-zA-Z0-9_-';
+elseif(!in_array(O::$moduleType, ['nodejs', 'composer']) && !preg_match('/^[a-z][a-z0-9\-]+$/', O::$moduleName)) {
+	$message = 'ERROR: The module name ['.O::$moduleName.'] is invalid.  Only the following characters are allowed: a-z, 0-9, -';
 	G::$cli->error($message);
 	exit;
 }
+
 
 
 
