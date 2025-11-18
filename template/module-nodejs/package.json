@@ -1,14 +1,19 @@
 {
   "scripts": {
-    "copy-jquery": "terser node_modules/jquery/dist/jquery.js -o ../entry-<?=O::$entryPointModule;?>/public/js/vendor/jquery.min.js",
-    "copy-bootstrap": "cpx 'node_modules/bootstrap/dist/css/bootstrap.min.css' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/ && cpx 'node_modules/bootstrap/dist/js/bootstrap.min.js' ../entry-<?=O::$entryPointModule;?>/public/js/vendor/",
-    "install-fonts": "wget 'https://fonts.googleapis.com/icon?family=Material+Icons' -O ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.css && wget 'https://fonts.gstatic.com/s/materialicons/v145/flUhRq6tzZclQEJ-Vdg-IuiaDsNZ.ttf' -O ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.ttf && sed -i -E 's/http.*\\.ttf/\\/css\\/vendor\\/google=material-icons.ttf/g' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.css"
+    "all": "run-s install-*",
+    "install-jquery": "terser node_modules/jquery/dist/jquery.js -o ../entry-<?=O::$entryPointModule;?>/public/js/vendor/jquery.min.js",
+    "install-bootstrap": "cpx 'node_modules/bootstrap/dist/css/bootstrap.min.css' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/ && cpx 'node_modules/bootstrap/dist/js/bootstrap.min.js' ../entry-<?=O::$entryPointModule;?>/public/js/vendor/",
+    "install-bootstrap-slider": "cpx 'node_modules/bootstrap-slider/dist/css/bootstrap-slider.min.css' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/ && cpx 'node_modules/bootstrap-slider/dist/bootstrap-slider.min.js' ../entry-<?=O::$entryPointModule;?>/public/js/vendor/",
+    "install-google-icons": "wget 'https://fonts.googleapis.com/icon?family=Material+Icons' -O ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.css && wget 'https://fonts.gstatic.com/s/materialicons/v145/flUhRq6tzZclQEJ-Vdg-IuiaDsNZ.ttf' -O ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.ttf && sed -i -E 's/http.*\\.ttf/\\/css\\/vendor\\/google=material-icons.ttf/g' ../entry-<?=O::$entryPointModule;?>/public/css/vendor/google-material-icons.css",
+    "install-md5": "cp node_modules/md5/dist/md5.min.js ../entry-<?=O::$entryPointModule;?>/public/js/vendor/"
   },
   "dependencies": {
     "bootstrap": "^5.3.8",
-    "jquery": "^3.7.1"
-  },
-  "devDependencies": {
+    "bootstrap-slider": "^11.0.2",
+    "jquery": "^3.7.1",
+    "md5": "^2.3.0",
+    "npm-run-all": "^4.1.5",
+    "select2": "^4.1.0-rc.0",
     "cpx": "^1.5.0",
     "terser": "^5.44.0"
   }
