@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: .  # Build context is root (for COPY .)
+      dockerfile: docker-config/php/Dockerfile  # Points to the PHP-FPM Dockerfile
+    volumes:
+      - .:/var/www/html  # Mount for live editing
+    # No ports exposed; Nginx proxies to it
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker-config/nginx/Dockerfile
+    ports:
+      - "8000:80"  # Access at http://localhost:8000
+    volumes:
+      - .:/var/www/html  # Sync files
+      - ./docker-config/nginx/nginx.conf:/etc/nginx/nginx.conf  # Mount config
+    depends_on:
+      - php  # Start PHP first
+
+# Optional: Add MySQL as before
+#  db:
+#    image: mysql:8.0
+#    environment:
+#      MYSQL_ROOT_PASSWORD: rootpassword
+#      MYSQL_DATABASE: mydb
+#    ports:
+#      - "3306:3306"
+#    volumes:
+#      - db-data:/var/lib/mysql
+
+# volumes:
+#   db-data:
