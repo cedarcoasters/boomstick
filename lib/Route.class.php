@@ -6,6 +6,40 @@ use BoomStick\Lib\Globals as G;
 use BoomStick\Lib\Debug as D;
 
 
+
+/**
+ * RouteMethod
+ *
+ */
+class RouteMethod
+{
+	protected $route;
+	protected $alias;
+
+	const POST = 'POST';
+	const GET  = 'GET';
+	const ANY  = 'ANY';
+
+	public function __construct(Route $route, $alias)
+	{
+		$this->route = $route;
+		$this->alias = $alias;
+	}
+	public function POST()
+	{
+		$this->route->setMethod($this->alias, self::POST);
+	}
+	public function GET()
+	{
+		$this->route->setMethod($this->alias, self::GET);
+	}
+	public function ANY()
+	{
+		$this->route->setMethod($this->alias, self::ANY);
+	}
+}
+
+
 /**
  * RouteName
  *
@@ -25,6 +59,8 @@ class RouteName
 	public function name($name)
 	{
 		$this->route->setNameToAlias($name, $this->alias);
+
+		return new RouteMethod($this->route, $this->alias);
 	}
 }
 
@@ -41,6 +77,7 @@ class Route
 
 	protected static $aliasList       = [];
 	protected static $nameToAliasList = [];
+	protected static $aliasMethod     = [];
 
 	protected $module;
 	protected $pathOriginal      = null;
@@ -65,7 +102,11 @@ class Route
 	{
 		$this->pathOriginal = G::$request->getRequestedPath();
 		try {
-			list($this->path, $this->pathCanonical) = $this->translate($this->pathOriginal);
+			list($this->path, $this->pathCanonical, $methodType) = $this->translate($this->pathOriginal);
+			if($methodType !== RouteMethod::ANY && G::$request->getMethod() !== $methodType) {
+				header("HTTP/1.0 405 Method Not Allowed");
+				die('Method Not Allowed');
+			}
 			$this->parse();
 			return true;
 		}
@@ -128,7 +169,8 @@ class Route
 		}
 		self::$aliasList[$alias] = [
 			 'module' => $this->module
-			,'route' => $route
+			,'route'  => $route
+			,'method' => 'ANY'
 		];
 		if($seoType === self::SEO_CANONICAL) {
 			$this->pathCanonicalList[$route] = $alias;
@@ -201,6 +243,16 @@ class Route
 	}
 
 
+
+	/**
+	 *
+	 */
+	public function setMethod($alias, $protocol)
+	{
+		self::$aliasList[$alias]['method'] = $protocol;
+	}
+
+
 	/**
 	 * Translates a given URL Path to an alias
 	 *
@@ -222,6 +274,7 @@ class Route
 		);
 		$regexAliases = [];
 
+		// D::printre(self::$aliasList);
 		foreach(self::$aliasList as $alias => $config) {
 			$module = $config['module'];
 			$route  = $config['route'];
@@ -252,8 +305,6 @@ class Route
 		$path      = preg_replace('/^\//', '', $path);
 		$pathParts = explode('/', $path);
 		$matches   = [];
-
-		// D::printre($regexAliases);
 
 		foreach($regexAliases as $alias => $conf) {
 
@@ -313,6 +364,7 @@ class Route
 		}
 
 		$realPath     = self::$aliasList[$aliasMatch]['route'];
+		$methodType   = self::$aliasList[$aliasMatch]['method'];
 		$this->module = self::$aliasList[$aliasMatch]['module'];
 
 		$v = (isset($parameterValues['integer'])) ? count($parameterValues['integer']) : 0;
@@ -330,7 +382,7 @@ class Route
 			$realPath .= '/'.implode('/', $pathParts);
 		}
 
-		return [$realPath, $canonicalPath];
+		return [$realPath, $canonicalPath, $methodType];
 	}
 
 

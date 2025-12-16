@@ -35,4 +35,5 @@ class Globals extends Struct
 	public static $route;
 	public static $request;
 	public static $version;
+	public static $session;
 }

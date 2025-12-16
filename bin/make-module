@@ -154,7 +154,7 @@ try {
 		? BSMODULE.'/'.O::$moduleType.'-'.O::$moduleName
 		: BSMODULE.'/'.O::$moduleType;
 	Message::send('MSG: Creating module directory ['.$moduleDir.']: ', Message::LEVEL_1, Message::NO_NEW_LINE);
-	mkdir($moduleDir);
+	mkdir($moduleDir, 0777, true);
 	Message::send('SUCCESS', Message::LEVEL_1, Message::ADD_NEW_LINE, 'green');
 
 	copyDir($moduleTemplateDir, $moduleDir);

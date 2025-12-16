@@ -26,8 +26,9 @@ require_once(BSROOT.'/lib/Globals.class.php');
 require_once(BSROOT.'/lib/Request.class.php');
 
 use BoomStick\Lib\Globals as G;
-use BoomStick\Lib\Request as Request;
-use BoomStick\Lib\Route   as Route;
+use BoomStick\Lib\Request;
+use BoomStick\Lib\Route;
+use BoomStick\Lib\Session;
 
 G::$debug = true;
 require_once(BSROOT.'/lib/Debug.class.php');
@@ -50,8 +51,9 @@ spl_autoload_register(function($className) {
 	}
 
 	$objName = array_pop($parts);
-	$class = $objName.'.class.php';
-	$trait = $objName.'.trait.php';
+	$class   = $objName.'.class.php';
+	$trait   = $objName.'.trait.php';
+	$manager = $objName.'.manager.php';
 
 	$translate = [BSROOT];
 	foreach($parts as $part) {
@@ -61,8 +63,9 @@ spl_autoload_register(function($className) {
 		$translate[] = strtolower(implode('-', $split));
 	}
 
-	$classFile = implode('/', $translate).'/'.$class;
-	$traitFile = implode('/', $translate).'/'.$trait;
+	$classFile   = implode('/', $translate).'/'.$class;
+	$traitFile   = implode('/', $translate).'/'.$trait;
+	$managerFile = implode('/', $translate).'/'.$manager;
 
 	if(file_exists($classFile)) {
 		require_once($classFile);
@@ -70,12 +73,19 @@ spl_autoload_register(function($className) {
 	if(file_exists($traitFile)) {
 		require_once($traitFile);
 	}
+	if(file_exists($managerFile)) {
+		require_once($managerFile);
+	}
 });
 
 $composer = BSMODULE.'/composer/vendor/autoload.php';
 if(file_exists($composer)) {
 	require_once($composer);
 }
+
+G::$session = (SESSION_ENABLED === true)
+	? new Session(type:SESSION_TYPE, lifetime:(60*60*24))
+	: null;
 
 G::$request = new Request();
 require_once(BSMODULE.'/route.map.php');
