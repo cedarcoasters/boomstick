@@ -145,6 +145,9 @@ function copyDir($originDir, $destinationDir)
 		$fh = fopen($destinationFile, 'w');
 		fwrite($fh, $fileContents);
 		fclose($fh);
+		if(preg_match('/\.sh$/', $destinationFile)) {
+			chmod($destinationFile, 0755);
+		}
 		Message::send('SUCCESS', Message::LEVEL_1, Message::ADD_NEW_LINE, 'green');
 	}
 }

@@ -23,5 +23,6 @@ define('MODULE_ROOT',      dirname(__DIR__));
 define('MODULE_NAMESPACE', '<?=O::$moduleNamespace;?>');
 define('SESSION_ENABLED', true);
 define('SESSION_TYPE',     'local');
+// COMPOSER - If the composer module is installed, this line will be replaced with the autoloader reference
 
 require(dirname(dirname(dirname(__DIR__))).'/init/http.init.php');
