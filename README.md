@@ -1,5 +1,7 @@
 # BoomStick Documentation
 
+> *"Alright you primitive screwheads, listen up!"*
+
 Official documentation site for the **BoomStick PHP MVC Framework** - a lightweight framework for rapid web application development.
 
 **Live Site:** [https://primitivescrewheads.dev](https://primitivescrewheads.dev)
@@ -7,6 +9,8 @@ Official documentation site for the **BoomStick PHP MVC Framework** - a lightwei
 ## Overview
 
 This documentation site provides comprehensive guides for getting started with BoomStick and building web applications using its modular architecture.
+
+*The name "BoomStick" is inspired by the cult classic Evil Dead franchise (Army of Darkness & Ash vs. Evil Dead). Groovy.*
 
 ### Getting Started
 
