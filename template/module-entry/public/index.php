@@ -21,5 +21,7 @@ namespace <?=O::$moduleNamespace;?>;
 
 define('MODULE_ROOT',      dirname(__DIR__));
 define('MODULE_NAMESPACE', '<?=O::$moduleNamespace;?>');
+define('SESSION_ENABLED', true);
+define('SESSION_TYPE',     'local');
 
 require(dirname(dirname(dirname(__DIR__))).'/init/http.init.php');
