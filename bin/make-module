@@ -57,7 +57,7 @@ $o->long        = 'module-type';
 $o->short       = 't';
 $o->required    = false;
 $o->default     = 'entry';
-$o->description = 'Module type to create.  Options: [entry, ui, api, lib, composer]'; // more to come
+$o->description = 'Module type to create.  Options: [entry, ui, api, lib, composer, nodejs]'; // more to come
 G::$cli->addOption($o);
 
 // CLI Option - Entry Point module name
