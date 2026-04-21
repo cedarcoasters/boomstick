@@ -122,6 +122,9 @@ G::$cli->NL(1);
 
 function copyDir($originDir, $destinationDir)
 {
+	// $moduleNameParts = explode('-', basename($destinationDir));
+	// $moduleName = $parts[1] ?? '';   // Get everything after the first "-"
+
 	$dh = opendir($originDir);
 	while($file = readdir($dh)) {
 		if(in_array($file, ['.', '..'])) {
