@@ -2,3 +2,6 @@ tmp
 module/*
 !module/README.md
 /docker-config/nginx/nginx.conf
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
