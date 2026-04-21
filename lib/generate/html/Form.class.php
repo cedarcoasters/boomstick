@@ -161,14 +161,13 @@ class Form
 
 	/**
 	 * singleUseKey - Generates the HTML input tag for the single use key
+	 * Uses cryptographically secure random bytes instead of weak MD5 hashing.
 	 *
 	 * @return - string
 	 */
 	private function singleUseKey()
 	{
-
-		$microtime = microtime();
-		$formKey = md5($this->name . $microtime) . md5($microtime) . md5(serialize($GLOBALS));
+		$formKey = bin2hex(random_bytes(32));
 
 		$formKeys = G::$session->formKeys;
 		$formKeys[$this->name] = $formKey;
@@ -176,7 +175,7 @@ class Form
 		G::$session->save();
 
 		$s[] = '<input type="hidden" name="__blaze_form_key" value="';
-		$s[] = $formKey;
+		$s[] = htmlspecialchars($formKey, ENT_QUOTES, 'UTF-8');
 		$s[] = '">';
 
 		return implode($s);
@@ -188,17 +187,16 @@ class Form
 
 	/**
 	 * verifyFormKey - Validates the form key and removes it from the session so it cannot
-	 *                 be validated again.
+	 *                 be validated again. Uses timing-safe comparison to prevent timing attacks.
 	 *
 	 * @param $formKey
 	 * @return - boolean
 	 */
 	private function verifyFormKey($formKey)
 	{
-		// D::printre(G::$session);
 		$formKeys = G::$session->formKeys;
 
-		if(isset($formKeys[$this->name]) && $formKeys[$this->name] === $formKey) {
+		if(isset($formKeys[$this->name]) && hash_equals($formKeys[$this->name], $formKey)) {
 			unset($formKeys[$this->name]);
 			G::$session->formKeys = $formKeys;
 			G::$session->save();
@@ -380,7 +378,7 @@ class Form
 				$s[] = ' formenctype="multipart/form-data"';
 				break;
 		}
-		$s[] = (!empty($attr)) ? ' '.$attr : '';
+		$s[] = (!empty($attr)) ? ' '.self::sanitizeAttributes($attr) : '';
 		$s[] = '>';
 		$s[] = '<input type="hidden" name="__form_name__" value="';
 		$s[] = $this->name;
@@ -425,6 +423,29 @@ class Form
 
 
 	/**
+	 * Sanitizes HTML attributes to prevent XSS via event handlers.
+	 * Removes dangerous attributes like onclick, onerror, etc.
+	 *
+	 * @param string|null $attr The attributes string to sanitize
+	 * @return string The sanitized attributes
+	 */
+	private static function sanitizeAttributes($attr)
+	{
+		if (empty($attr)) {
+			return '';
+		}
+		
+		// Remove event handler attributes (onclick, onerror, onload, etc.)
+		$attr = preg_replace('/\bon\w+\s*=\s*["\'][^"\']*["\']/i', '', $attr);
+		$attr = preg_replace('/\bon\w+\s*=\s*[^\s>]*/i', '', $attr);
+		
+		// Remove javascript: URLs
+		$attr = preg_replace('/javascript\s*:/i', '', $attr);
+		
+		return trim($attr);
+	}
+
+	/**
 	 * input - Returns the common parts of the <input> tag used by all of the other form element generators.
 	 *
 	 * @param $name - Name of the input tag: name="$name"
@@ -465,13 +486,13 @@ class Form
 		$s = self::input(name:$name, type:'hidden', disabled:$disabled);
 		$s[] = ' value="';
 		if($value === null && isset($this->formValues->{$name})) {
-			$s[] = urlencode((string)$this->formValues->{$name});
+			$s[] = htmlspecialchars((string)$this->formValues->{$name}, ENT_QUOTES, 'UTF-8');
 		}
 		else {
-			$s[] = urlencode((string)$value);
+			$s[] = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 		}
 		$s[] = '"';
-		$s[] = ' '.$attr;
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		$s[] = '>';
 
 		return implode($s);
@@ -514,13 +535,13 @@ class Form
 		$s = self::input(name:$name, type:'text', disabled:$disabled);
 		$s[] = ' value="';
 		if($value === null && isset($this->formValues->{$name})) {
-			$s[] = preg_replace('/\"/', '&quot;', $this->formValues->{$name});
+			$s[] = htmlspecialchars($this->formValues->{$name}, ENT_QUOTES, 'UTF-8');
 		}
 		else {
-			$s[] = preg_replace('/\"/', '&quot;', (string)$value);
+			$s[] = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 		}
 		$s[] = '"';
-		$s[] = ' '.$attr;
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		$s[] = '>';
 		$s[] = $this->helpBlock($name);
 		$s[] = "\n";
@@ -545,13 +566,13 @@ class Form
 		$s = self::input(name:$name, type:'email', disabled:$disabled);
 		$s[] = ' value="';
 		if($value === null && isset($this->formValues->{$name})) {
-			$s[] = preg_replace('/\"/', '&quot;', $this->formValues->{$name});
+			$s[] = htmlspecialchars($this->formValues->{$name}, ENT_QUOTES, 'UTF-8');
 		}
 		else {
-			$s[] = preg_replace('/\"/', '&quot;', (string)$value);
+			$s[] = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 		}
 		$s[] = '"';
-		$s[] = ' '.$attr;
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		$s[] = '>';
 		$s[] = $this->helpBlock($name);
 
@@ -575,13 +596,13 @@ class Form
 		$s = self::input(name:$name, type:'password', disabled:$disabled);
 		$s[] = ' value="';
 		if($value === null && isset($this->formValues->{$name})) {
-			$s[] = preg_replace('/\"/', '&quot;', $this->formValues->{$name});
+			$s[] = htmlspecialchars($this->formValues->{$name}, ENT_QUOTES, 'UTF-8');
 		}
 		else {
-			$s[] = preg_replace('/\"/', '&quot;', (string)$value);
+			$s[] = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 		}
 		$s[] = '"';
-		$s[] = ' '.$attr;
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		$s[] = '>';
 		$s[] = $this->helpBlock($name);
 
@@ -603,11 +624,11 @@ class Form
 	public function inputCheckbox($name, $value='1', $attr=null, $disabled=false)
 	{
 		$s = self::input(name:$name, type:'checkbox', disabled:$disabled);
-		$s[] = ' value="'.urlencode((string)$value).'"';
+		$s[] = ' value="'.htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8').'"';
 		if(isset($this->formValues->{$name}) && (boolean)$this->formValues->{$name} === true) {
 			$s[] = ' checked="checked"';
 		}
-		$s[] = ' '.$attr;
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		$s[] = '>';
 
 		return implode($s);
@@ -628,12 +649,12 @@ class Form
 	public function inputRadio($name, $value, $attr=null, $disabled=false)
 	{
 		$s = self::input(name:$name, type:'radio', id:$name.$value, disabled:$disabled);
-		$s[] = ' value="'.urlencode((string)$value).'"';
+		$s[] = ' value="'.htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8').'"';
 		if(isset($this->formValues->{$name}) && $this->formValues->{$name} === $value) {
 			$s[] = ' checked="checked"';
 		}
 		if(!empty($attr)) {
-			$s[] = ' '.$attr;
+			$s[] = ' '.self::sanitizeAttributes($attr);
 		}
 		$s[] = '>';
 
@@ -653,9 +674,9 @@ class Form
 	public function inputRange($name, $value, $attr=null, $disabled=false)
 	{
 		$s = self::input(name:$name, type:'range', id:$name.$value, disabled:$disabled);
-		$s[] = ' value="'.urlencode((string)$value).'"';
+		$s[] = ' value="'.htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8').'"';
 		if(!empty($attr)) {
-			$s[] = ' '.$attr;
+			$s[] = ' '.self::sanitizeAttributes($attr);
 		}
 		$s[] = '>';
 
@@ -675,8 +696,8 @@ class Form
 	public function inputSubmit($name, $value, $attr=null, $disabled=false)
 	{
 		$s = self::input(name:$name, type:'submit', disabled:$disabled);
-		$s[] = ' value="'.preg_replace('/\"/', '&quot;', $value).'"';
-		$s[] = ' '.$attr;
+		$s[] = ' value="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'"';
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		$s[] = '>';
 
 		return implode($s);
@@ -701,16 +722,16 @@ class Form
 		$s[] = '<textarea';
 		$s[] = ' name="'.urlencode((string)$this->name).'['.urlencode((string)$name).']"';
 		$s[] = ' id="'.urlencode((string)$name).'"';
-		$s[] = ' '.$attr;
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		if($disabled === true) {
 			$s[] = ' disabled';
 		}
 		$s[] = '>';
 		if($value === null && isset($this->formValues->{$name})) {
-			$s[] = htmlspecialchars($this->formValues->{$name});
+			$s[] = htmlspecialchars($this->formValues->{$name}, ENT_QUOTES, 'UTF-8');
 		}
 		else {
-			$s[] = htmlspecialchars((string)$value);
+			$s[] = htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 		}
 		$s[] = '</textarea>';
 		$s[] = $this->helpBlock($name);
@@ -736,9 +757,8 @@ class Form
 		$s = array();
 		$s[] = '<select';
 		$s[] = ' name="'.urlencode((string)$this->name).'['.urlencode((string)$name).']"';
-		// $s[] = ' id="'.urlencode((string)$name).'"';
-		$s[] = ' id="form-'.$this->name.'-'.$name.'"';
-		$s[] = ' '.$attr;
+		$s[] = ' id="form-'.htmlspecialchars($this->name, ENT_QUOTES, 'UTF-8').'-'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'"';
+		$s[] = ' '.self::sanitizeAttributes($attr);
 		if($disabled === true) {
 			$s[] = ' disabled';
 		}
@@ -821,17 +841,17 @@ class Form
 		foreach($options as $group => $valueList) {
 			$s[] = "\n    ";
 			$s[] = '<optgroup';
-			$s[] = ' label="'.preg_replace('/\"/', '&quot;', $group).'"';
+			$s[] = ' label="'.htmlspecialchars($group, ENT_QUOTES, 'UTF-8').'"';
 			$s[] = '>';
 			foreach($valueList as $value => $label) {
 				$s[] = "\n        ";
 				$s[] = '<option';
-				$s[] = ' value="'.urlencode((string)$value).'"';
+				$s[] = ' value="'.htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8').'"';
 				if($selected == $value) {
 					$s[] = ' selected="selected"';
 				}
 				$s[] = '>';
-				$s[] = preg_replace('/\"/', '&quot;', $label);
+				$s[] = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
 				$s[] = '</option>';
 			}
 			$s[] = '</optgroup>';

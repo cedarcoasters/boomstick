@@ -35,11 +35,16 @@ class LocalPHP
 	public function __construct($name, $lifetime)
 	{
 		$domain = preg_replace('/\:[0-9]*$/', '', $_SERVER['HTTP_HOST']);
+		$isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') 
+			|| (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+		
 		session_set_cookie_params([
 			 'lifetime' => $lifetime
  			,'path' => '/'
 			,'domain' => $domain
 			,'httponly' => true
+			,'secure' => $isSecure
+			,'samesite' => 'Lax'
 		]);
 
 		session_name($name);
@@ -85,7 +90,24 @@ class LocalPHP
 
 	public function CSRFToken()
 	{
-		return session_id();
+		if (!isset($_SESSION['_csrf_token'])) {
+			$_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+		}
+		return $_SESSION['_csrf_token'];
+	}
+
+	public function validateCSRFToken($token)
+	{
+		if (!isset($_SESSION['_csrf_token'])) {
+			return false;
+		}
+		return hash_equals($_SESSION['_csrf_token'], $token);
+	}
+
+	public function regenerateCSRFToken()
+	{
+		$_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
+		return $_SESSION['_csrf_token'];
 	}
 
 	public function status()

@@ -89,6 +89,16 @@ class Session extends Struct
 		return $this->session->CSRFToken();
 	}
 
+	public function validateCSRFToken($token)
+	{
+		return $this->session->validateCSRFToken($token);
+	}
+
+	public function regenerateCSRFToken()
+	{
+		return $this->session->regenerateCSRFToken();
+	}
+
 	public function save()
 	{
 		return $this->session->save();

@@ -37,9 +37,26 @@ class Table
 		$this->conn = $conn;
 	}
 
+	/**
+	 * Validates a SQL identifier (table or column name) to prevent SQL injection.
+	 * Only allows alphanumeric characters and underscores, must start with letter or underscore.
+	 *
+	 * @param string $identifier The identifier to validate
+	 * @return string The validated identifier
+	 * @throws \InvalidArgumentException If the identifier is invalid
+	 */
+	public static function validateIdentifier(string $identifier): string
+	{
+		if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]{0,63}$/', $identifier)) {
+			throw new \InvalidArgumentException("Invalid SQL identifier: " . substr($identifier, 0, 64));
+		}
+		return $identifier;
+	}
+
 
 	public function desc(string $table, array $fields=[], bool $print=false)
 	{
+		$table = self::validateIdentifier($table);
 		$stmt = $this->conn->pdo->prepare('DESC `'.$table.'`');
 		$stmt->execute();
 		$rows = $stmt->fetchAll();

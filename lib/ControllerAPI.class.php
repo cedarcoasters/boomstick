@@ -59,8 +59,34 @@ abstract class ControllerAPI extends Struct
 		die('Request is not authorized.');
 	}
 
+	/**
+	 * Validates that a redirect destination is safe (internal URL only).
+	 *
+	 * @param string $destination The redirect URL to validate
+	 * @return bool True if the destination is safe
+	 */
+	protected function isValidRedirectDestination($destination)
+	{
+		// Allow relative URLs starting with /
+		if (preg_match('#^/[^/\\\\]#', $destination) || $destination === '/') {
+			return true;
+		}
+
+		// Check if it's an absolute URL to the same host
+		$parsed = parse_url($destination);
+		if (isset($parsed['host'])) {
+			$currentHost = $_SERVER['HTTP_HOST'] ?? '';
+			return strcasecmp($parsed['host'], $currentHost) === 0;
+		}
+
+		return false;
+	}
+
 	protected function redirect($destination)
 	{
+		if (!$this->isValidRedirectDestination($destination)) {
+			throw new \InvalidArgumentException('Invalid redirect destination: external URLs not allowed');
+		}
 		header('HTTP/1.1 302 Found');
 		header('Location: ' . $destination);
 		exit;
@@ -68,7 +94,23 @@ abstract class ControllerAPI extends Struct
 
 	protected function redirectPerm($destination)
 	{
-		header('HTTP/1.1 301 Found');
+		if (!$this->isValidRedirectDestination($destination)) {
+			throw new \InvalidArgumentException('Invalid redirect destination: external URLs not allowed');
+		}
+		header('HTTP/1.1 301 Moved Permanently');
+		header('Location: ' . $destination);
+		exit;
+	}
+
+	/**
+	 * Redirect to an external URL (use with caution - validates URL format only)
+	 */
+	protected function redirectExternal($destination)
+	{
+		if (!filter_var($destination, FILTER_VALIDATE_URL)) {
+			throw new \InvalidArgumentException('Invalid URL format');
+		}
+		header('HTTP/1.1 302 Found');
 		header('Location: ' . $destination);
 		exit;
 	}

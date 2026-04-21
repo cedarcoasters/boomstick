@@ -42,9 +42,9 @@ class Lyst
 	public function fromTable($tableName)
 	{
 		$this->tableObj        = new Table($this->conn);
-		$this->fields          = $this->tableObj->desc($tableName);
+		$this->tableName       = Table::validateIdentifier($tableName);
+		$this->fields          = $this->tableObj->desc($this->tableName);
 		$this->validFieldNames = array_keys($this->fields);
-		$this->tableName       = $tableName;
 		return $this;
 	}
 
@@ -77,6 +77,9 @@ class Lyst
 		$offset = ($page - 1) * $count;
 
 		$dataOnly = ($valuesOnly === true) ? true : $dataOnly;
+		
+		// Validate table name early
+		$safeTable = Table::validateIdentifier($this->tableName);
 
 		$whereSQL  = [];
 		$sqlParams = [];
@@ -91,7 +94,7 @@ class Lyst
 
 		// Total Pages/Records
 		$sql = [];
-		$sql[] = 'SELECT COUNT(1) AS `totalRecords` FROM `'.$this->tableName.'`';
+		$sql[] = 'SELECT COUNT(1) AS `totalRecords` FROM `'.$safeTable.'`';
 
 		if(count($whereSQL) > 0) {
 			$sql[] = 'WHERE';
@@ -111,17 +114,18 @@ class Lyst
 		// Field List
 		$fieldNames = $fields;
 		if(!empty($fields) && count($fields) > 0) {
-			array_walk($fields, function(&$field, $key) {
+			array_walk($fields, function(&$field, $key) use ($safeTable) {
 				if(!in_array($field, $this->validFieldNames)) {
 					$message = 'The field ['.$field.'] is invalid for table ['.$this->tableName.'].  Valid fields: ['.implode(', ', $this->validFieldNames).']';
 					throw new \InvalidArgumentException($message);
 				}
-				$field = '`'.$this->tableName.'`.`'.preg_replace('/[^a-zA-Z0-9_]/', '_', $field).'`';
+				$safeField = Table::validateIdentifier($field);
+				$field = '`'.$safeTable.'`.`'.$safeField.'`';
 			});
 			$fieldsSQL = $fields;
 		}
 		else {
-			$fieldsSQL = ['`'.$this->tableName.'`.*'];
+			$fieldsSQL = ['`'.$safeTable.'`.*'];
 		}
 
 
@@ -141,7 +145,7 @@ class Lyst
 			$sql[] = 'DISTINCT';
 		}
 		$sql[] = implode(', ', $fieldsSQL);
-		$sql[] = 'FROM `'.$this->tableName.'`';
+		$sql[] = 'FROM `'.$safeTable.'`';
 		if(count($whereSQL) > 0) {
 			$sql[] = 'WHERE';
 			$sql[] = implode(' AND ', $whereSQL);

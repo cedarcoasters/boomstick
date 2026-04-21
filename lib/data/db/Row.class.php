@@ -105,16 +105,19 @@ class Row
 	{
 		if(empty($this->tableName) || empty($this->fields)) {
 			$message = 'You are executing '.__CLASS__.'::'.__FUNCTION__.' before establishing the table to pull the row from.  [$row->fromTable(\'your_table\')->byField(\'my_table\', 123);]';
-			throw new LogicException($message);
+			throw new \LogicException($message);
 		}
+
+		$safeTable = Table::validateIdentifier($this->tableName);
+		$safeField = Table::validateIdentifier($field);
 
 		$sql = [];
 		$sql[] = 'SELECT';
 		$sql[] = ' * ';
 		$sql[] = 'FROM';
-		$sql[] = '      `'.$this->tableName.'`';
+		$sql[] = '      `'.$safeTable.'`';
 		$sql[] = 'WHERE';
-		$sql[] = '     `'.$field.'` = :value';
+		$sql[] = '     `'.$safeField.'` = :value';
 		$sql[] = 'LIMIT 1';
 		$stmt = $this->conn->pdo->prepare(implode(' ', $sql));
 		$stmt->bindValue(':value', $value, PDO::PARAM_INT);
@@ -223,10 +226,12 @@ class Row
 			$fieldsSQL  = [];
 			$bindFields = [];
 
+			$safeTable = Table::validateIdentifier($this->tableName);
 			$sql   = [];
-			$sql[] = 'INSERT INTO `'.$this->tableName.'` SET';
+			$sql[] = 'INSERT INTO `'.$safeTable.'` SET';
 
 			foreach($this->fields as $field => $fieldObj) {
+				$safeField = Table::validateIdentifier($field);
 				if(in_array($field, ['id', 'time_modified']) || $fieldObj->sqlSkipInsert === true) {
 					continue;
 				}
@@ -236,13 +241,13 @@ class Row
 				}
 
 				if(!empty($fieldObj->sqlOnInsert)) {
-					$fieldsSQL[] = '`'.$field.'` = '.$fieldObj->sqlOnInsert;
+					$fieldsSQL[] = '`'.$safeField.'` = '.$fieldObj->sqlOnInsert;
 				}
 				elseif((string)$fieldObj->value == '') {
 					continue;
 				}
 				else {
-					$fieldsSQL[] = '`'.$field.'` = :'.$field;
+					$fieldsSQL[] = '`'.$safeField.'` = :'.$field;
 				}
 
 				$bindFields[] = $field;
@@ -323,11 +328,13 @@ class Row
 
 		$fieldsUpdated = [];
 		$fieldsError   = [];
+		$safeTable = Table::validateIdentifier($this->tableName);
 		foreach($changedFields as $fieldName) {
 			try {
+				$safeFieldName = Table::validateIdentifier($fieldName);
 				$sql = [];
-				$sql[] = 'UPDATE `'.$this->tableName.'` SET';
-				$sql[] = ' `'.$fieldName.'` = :'.$fieldName;
+				$sql[] = 'UPDATE `'.$safeTable.'` SET';
+				$sql[] = ' `'.$safeFieldName.'` = :'.$fieldName;
 				$sql[] = 'WHERE';
 				$sql[] = '     `id` = :id';
 				$stmt = $this->conn->pdo->prepare(implode(' ', $sql));

@@ -181,6 +181,32 @@ abstract class Controller extends ControllerAPI
 		return $this->processFile('script', $file, true);
 	}
 
+	/**
+	 * Validates a file name to prevent path traversal attacks.
+	 * Only allows alphanumeric characters, hyphens, underscores, and forward slashes for subdirectories.
+	 *
+	 * @param string $file The file name to validate
+	 * @return string The validated file name
+	 * @throws \InvalidArgumentException If the file name contains invalid characters
+	 */
+	private function validateFileName($file)
+	{
+		// Remove any null bytes
+		$file = str_replace("\0", '', $file);
+		
+		// Check for path traversal attempts
+		if (preg_match('/\.\./', $file) || preg_match('/^\//', $file)) {
+			throw new \InvalidArgumentException('Invalid file name: path traversal not allowed');
+		}
+		
+		// Only allow safe characters (alphanumeric, hyphen, underscore, forward slash for subdirs)
+		if (!preg_match('/^[a-zA-Z0-9_\-\/]+$/', $file)) {
+			throw new \InvalidArgumentException('Invalid file name: contains disallowed characters');
+		}
+		
+		return $file;
+	}
+
 	private function processFile($type, $file, $returnContent)
 	{
 		$modulePath = $this->modulePath;
@@ -215,7 +241,20 @@ abstract class Controller extends ControllerAPI
 				$extention = 'style';
 				break;
 		}
+		
+		// Validate file name to prevent path traversal
+		$file = $this->validateFileName($file);
 		$fileLoc = $modulePath.'/render/'.$fileDir.'/'.$file.'.'.$extention.'.php';
+		
+		// Additional check: ensure the resolved path is within the expected directory
+		$realPath = realpath(dirname($fileLoc));
+		$expectedBase = realpath($modulePath.'/render/'.$fileDir);
+		if ($realPath === false || $expectedBase === false || strpos($realPath, $expectedBase) !== 0) {
+			throw new \Exception( implode(' ', array(
+				 __CLASS__.'::'.__FUNCTION__
+				,' - Invalid file path detected.'
+			)));
+		}
 
 		if(!file_exists($fileLoc)) {
 			throw new \Exception( implode(' ', array(
